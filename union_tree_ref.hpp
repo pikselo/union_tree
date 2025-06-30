@@ -113,10 +113,8 @@ struct node_t<T, S> {
 
   template <std::size_t Index>
   constexpr decltype(auto) get() const {
-  if constexpr (Index == 0)
-    return ref_or_val(a);
-  else
-    return ref_or_val(b);
+  if constexpr (Index == 0) return ref_or_val(a);
+  else                      return ref_or_val(b);
   }
 };
 

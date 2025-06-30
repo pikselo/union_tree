@@ -66,11 +66,9 @@ struct node_t<T, S> {
 	
   template <std::size_t Index>
   constexpr auto& get() const {
-    if constexpr ( Index < T::elem_size )
-	  return a.template get<Index>();
-	else 
-      return b.template get<Index - T::elem_size>();	
-	}
+    if constexpr ( Index < T::elem_size ) return a.template get<Index>();
+	else                                  return b.template get<Index - T::elem_size>();	
+  }
 };
 
 template <Leaf T, Leaf S>
@@ -89,11 +87,9 @@ struct node_t<T, S> {
 
   template <std::size_t Index>
   constexpr auto& get() const {
-    if constexpr ( Index == 0 )
-      return a;
-	else 
-	  return b;
-	}
+    if constexpr ( Index == 0 ) return a;
+	else                        return b;
+  }
 };
 
 template <Leaf T>
@@ -107,7 +103,7 @@ struct node_t<T, void> {
 
     template <std::size_t Index>
 	constexpr auto& get() const {
-        return a;
+      return a;
 	}
 };
 
