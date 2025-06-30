@@ -52,55 +52,52 @@ concept RightNode = requires
 
 template <Node T, NodeOrSentinel S>
 struct node_t<T, S> {
+  union {T a; S b; };
 
-	union {T a; S b; };
-
-	static constexpr std::size_t elem_size = T::elem_size + S::elem_size;
+  static constexpr std::size_t elem_size = T::elem_size + S::elem_size;
 	
-	constexpr node_t() = default;
+  constexpr node_t() = default;
 	
-	template <std::size_t Index, class... Args> requires LeftNode<T, Index>
-	constexpr node_t(index_t<Index>, Args&&... args)  : a{index_t<Index>{}, std::forward<Args>(args)... }{}
+  template <std::size_t Index, class... Args> requires LeftNode<T, Index>
+  constexpr node_t(index_t<Index>, Args&&... args)  : a{index_t<Index>{}, std::forward<Args>(args)... }{}
 	
-	template <std::size_t Index, class... Args>	requires RightNode<T, Index>
-	constexpr node_t(index_t<Index>, Args&&... args)  : b{index_t<Index - T::elem_size>{}, std::forward<Args>(args)... }{}
+  template <std::size_t Index, class... Args>	requires RightNode<T, Index>
+  constexpr node_t(index_t<Index>, Args&&... args)  : b{index_t<Index - T::elem_size>{}, std::forward<Args>(args)... }{}
 	
-    template <std::size_t Index>
-	constexpr auto& get() const {
-      if constexpr ( Index < T::elem_size )
-	    return a.template get<Index>();
-	  else 
-        return b.template get<Index - T::elem_size>();	
+  template <std::size_t Index>
+  constexpr auto& get() const {
+    if constexpr ( Index < T::elem_size )
+	  return a.template get<Index>();
+	else 
+      return b.template get<Index - T::elem_size>();	
 	}
 };
 
 template <Leaf T, Leaf S>
 struct node_t<T, S> {
+  union {T a; S b; };
 
-	union {T a; S b; };
+  static constexpr std::size_t elem_size = 2;
+	
+  constexpr node_t() = default;
+	
+  template <class... Args>                  
+  constexpr node_t(index_t<0>, Args&&... args) : a{std::forward<Args>(args)...} {}
+	
+  template <class... Args>                 
+  constexpr node_t(index_t<1>, Args&&... args) : b{std::forward<Args>(args)...} {}
 
-	static constexpr std::size_t elem_size = 2;
-	
-	constexpr node_t() = default;
-	
-	template <class... Args>                  
-	constexpr node_t(index_t<0>, Args&&... args) : a{std::forward<Args>(args)...} {}
-	
-	template <class... Args>                 
-	constexpr node_t(index_t<1>, Args&&... args) : b{std::forward<Args>(args)...} {}
-
-    template <std::size_t Index>
-	constexpr auto& get() const {
-      if constexpr ( Index == 0 )
-        return a;
-	  else 
-	    return b;
+  template <std::size_t Index>
+  constexpr auto& get() const {
+    if constexpr ( Index == 0 )
+      return a;
+	else 
+	  return b;
 	}
 };
 
 template <Leaf T>
 struct node_t<T, void> {
-    
     T a;
 	static constexpr std::size_t elem_size = 1;
 	constexpr node_t() = default;
@@ -113,7 +110,6 @@ struct node_t<T, void> {
         return a;
 	}
 };
-
 
 // =================== algorithm to build the tree of unions 
 // take a sequence of types and perform an order preserving fold until only last pair is left
