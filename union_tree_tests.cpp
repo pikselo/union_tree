@@ -12,6 +12,7 @@ using storage_t = parsed_types<int, char, float, double, unsigned, std::byte, sh
 
 int main()
 {
+    //Check binary nature of types within the recursive union
     using t_short = node_t<short, void>;
     static_assert( std::is_same_v<t_short, parsed_types<short, void>>);
 
@@ -47,6 +48,7 @@ int main()
     using t_8 = node_t<node_t<t_int_char_float_double, t_unsigned_byte_signed_long>, sentinel_t>;
     static_assert(std::is_same_v<t_8, parsed_types<int, char, float, double, unsigned, std::byte, signed, long, sentinel_t>>);
 
+    //Test values and types being currently stored
     constexpr storage_t storage{index_t<0>{}, int(3)};
     static_assert(storage.get<0>() == 3);
     
