@@ -1,9 +1,7 @@
 #include <concepts>
 #include <utility>
 #include <cassert>
-
-using storage_t     = parsed_types<int, char, float, double, unsigned, std::byte, short, sentinel_t>;
-using storage_ref_t = parsed_types<int&, char&, float&, double&, unsigned&, std::byte&, short&, sentinel_t>;
+#include "union_tree_ref.hpp"
 
 int main()
 {
@@ -41,6 +39,8 @@ int main()
     using t_unsigned_byte_signed_long = node_t<t_unsigned_byte, t_signed_long>;
     using t_8 = node_t<node_t<t_int_char_float_double, t_unsigned_byte_signed_long>, sentinel_t>;
     static_assert(std::is_same_v<t_8, parsed_types<int, char, float, double, unsigned, std::byte, signed, long, sentinel_t>>);
+
+    using storage_t = parsed_types<int, char, float, double, unsigned, std::byte, short, sentinel_t>;
 
     constexpr storage_t storage{index_t<0>{}, int(3)};
     static_assert(storage.get<0>() == 3);
@@ -105,6 +105,8 @@ int main()
     using t_ref_8 = node_t<node_t<t_ref_int_char_float_double, t_ref_unsigned_byte_signed_long>, sentinel_t>;
     static_assert(std::is_same_v<t_ref_8, parsed_types<int&, char&, float&, double&, unsigned&, std::byte&, signed&, long&, sentinel_t>>);
 
+    using storage_ref_t = parsed_types<int&, char&, float&, double&, unsigned&, std::byte&, short&, sentinel_t>;
+
     int var_int{3};
     storage_ref_t ref_storage{index_t<0>{}, var_int};
     var_int                                                    =  5;
@@ -164,6 +166,46 @@ int main()
     assert(var_byte                                            == static_cast<std::byte>(5));
     static_assert(std::is_same<decltype(ref_storage.get<5>()), std::byte&>::value);
 
-   
+
+    using t_const_ref_short = node_t<const short&, void>;
+    static_assert( std::is_same_v<t_const_ref_short, parsed_types<const short&, void>>);
+
+    using t_const_ref_int_char = node_t<const int&, const char&>;
+    using t_const_ref_2 = node_t<t_const_ref_int_char, sentinel_t>;
+    static_assert(std::is_same_v<t_const_ref_2, parsed_types<const int&, const char&, sentinel_t>>);
+
+    using t_const_ref_int_char_short = node_t<t_const_ref_int_char, t_const_ref_short>;
+    using t_const_ref_3 = node_t<t_const_ref_int_char_short, sentinel_t>;
+    static_assert(std::is_same_v<t_const_ref_3, parsed_types<const int&, const char&, const short&, sentinel_t>>);
+
+
+    using storage_const_ref_t = parsed_types<const int&, const char&, float&, const double&, const unsigned&, const std::byte&, const short&, sentinel_t>;
+    int var_const_int{3};
+    storage_const_ref_t const_ref_storage_0{index_t<0>{}, var_const_int};
+    var_const_int                                             =  5; 
+    assert(const_ref_storage_0.get<0>()                       == 5);
+    //const_ref_storage_0.get<0>()                            =  3; //cannot assign to return value because function 'get<3UL>' returns a const value
+    //assert(const_ref_storage_0.get<0>()                     == 3);
+    static_assert(std::is_same<decltype(const_ref_storage_0.get<0>()), const int&>::value);
+
+
+    float var_const_float{3};
+    storage_const_ref_t const_ref_storage_2{index_t<2>{}, var_const_float};
+    assert(const_ref_storage_2.get<2>()                       == 3);
+    //const_ref_storage_0.get<0>()                            =  3; //cannot assign to return value because function returns a const value
+    //assert(const_ref_storage_2.get<2>()                     == 3);
+    static_assert(std::is_same<decltype(const_ref_storage_2.get<2>()), float&>::value);
+
+
+    const double var_const_double{3};
+    storage_const_ref_t const_ref_storage_3{index_t<3>{}, var_double};
+    //var_const_double                                            =  5; //note: variable 'var_const_double' declared const
+    assert(const_ref_storage_3.get<3>()                         == 3);
+    //const_ref_storage_3.get<3>()                              =  3; //cannot assign to return value because function 'get<3UL>' returns a const value
+    assert(const_ref_storage_3.get<3>()                         == 3);
+    assert(var_double                                           == 3);
+    static_assert(std::is_same<decltype(const_ref_storage_3.get<3>()), const double&>::value);
+
+
     return 0;
 }
