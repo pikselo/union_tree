@@ -83,12 +83,11 @@ struct leaf_impl<T&> {
 template <typename T>
 using leaf_t = typename leaf_impl<T>::type;
 
-template<typename T>
+template<typename DeclaredType, typename T>
 constexpr decltype(auto) ref_or_val(T&& value) {
-    if constexpr (std::is_pointer_v<std::remove_reference_t<T>>) 
-        return *value;
-    else
-        return value;
+    if      constexpr (std::is_pointer_v<DeclaredType>)          return static_cast<DeclaredType>(value); // return pointer by value
+    else if constexpr (std::is_lvalue_reference_v<DeclaredType>) return *value;                           // return reference from pointer
+    else                                                         return value;                            // return value
 }
 
 template<typename LeafPtr, typename Arg>
@@ -98,7 +97,7 @@ concept bindable_reference = std::is_pointer_v<LeafPtr> && std::is_lvalue_refere
 
 
 template<typename LeafPtr, typename... Args>
-concept constructible_from_pack = (!std::is_pointer_v<LeafPtr>) && std::constructible_from<LeafPtr,Args...>;
+concept constructible_from_pack = (!std::is_pointer_v<LeafPtr>) && std::constructible_from<LeafPtr, Args...>;
 
 template <Leaf T, Leaf S>
 struct node_t<T, S> {
@@ -112,31 +111,38 @@ struct node_t<T, S> {
 	
 	constexpr node_t() = default;
 	
-    template <class Arg>      requires bindable_reference<leaf_T, Arg&>
-    constexpr node_t(index_t<0>, Arg& arg)       : a{std::addressof(arg)} {}
+    template <class Arg>     requires std::is_pointer_v<leaf_T> && std::convertible_to<Arg, leaf_T>
+    constexpr node_t(index_t<0>, Arg arg) : a{arg} {}
 
-	template <class... Args>  requires constructible_from_pack<leaf_T, Args...>     
+    template <class Arg>     requires std::is_pointer_v<leaf_S> && std::convertible_to<Arg, leaf_S>
+    constexpr node_t(index_t<1>, Arg arg) : b{arg} {}
+
+    template <class Arg>     requires bindable_reference<leaf_T, Arg&>
+    constexpr node_t(index_t<0>, Arg& arg) : a{std::addressof(arg)} {}
+
+    template <class Arg>     requires bindable_reference<leaf_S, Arg&>
+    constexpr node_t(index_t<1>, Arg& arg) : b{std::addressof(arg)} {}
+
+	template <class... Args> requires constructible_from_pack<leaf_T, Args...>
 	constexpr node_t(index_t<0>, Args&&... args) : a{std::forward<Args>(args)...} {}
-	
-    template <class Arg>      requires bindable_reference<leaf_S, Arg&>
-    constexpr node_t(index_t<1>, Arg& arg)       : b{std::addressof(arg)} {}
 
-	template <class... Args>  requires constructible_from_pack<leaf_S, Args...>
+	template <class... Args> requires constructible_from_pack<leaf_S, Args...>
 	constexpr node_t(index_t<1>, Args&&... args) : b{std::forward<Args>(args)...} {}
 
-   template <std::size_t Index>
-   constexpr decltype(auto) get() const {
-     if constexpr (Index == 0)
-      return ref_or_val(a);
-    else
-      return ref_or_val(b);
-   }
+    template <std::size_t Index>
+    constexpr decltype(auto) get() const {
+      if constexpr (Index == 0)
+       return ref_or_val<T>(a);
+     else
+       return ref_or_val<S>(b);
+    }
 };
 
 template <Leaf T>
 struct node_t<T, void> {
-    
-    T a;
+
+    using leaf_T = leaf_t<T>;
+    leaf_T a;
 	static constexpr std::size_t elem_size = 1;
 	constexpr node_t()  = default;
 	
@@ -145,7 +151,7 @@ struct node_t<T, void> {
 
     template <std::size_t Index>
     constexpr decltype(auto) get() const {
-       return ref_or_val(a);
+       return ref_or_val<T>(a);
     }
 };
 
@@ -244,5 +250,4 @@ struct parser_impl<Previous, sentinel_t, Rest...> {
 };
 
 template <typename... Ts>
-using parsed_types = typename parser_impl<Ts...>::type;
-  
+using parsed_types = typename parser_impl<Ts...>::type;  

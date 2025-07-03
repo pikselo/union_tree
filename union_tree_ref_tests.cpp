@@ -207,5 +207,33 @@ int main()
     static_assert(std::is_same<decltype(const_ref_storage_3.get<3>()), const double&>::value);
 
 
+    using t_ptr_short = node_t<short*, void>;
+    static_assert( std::is_same_v<t_ptr_short, parsed_types<short*, void>>);
+
+    using t_ptr_int_char = node_t<int*, char*>;
+    using t_ptr_2 = node_t<t_ptr_int_char, sentinel_t>;
+    static_assert(std::is_same_v<t_ptr_2, parsed_types<int*, char*, sentinel_t>>);
+
+    using t_ptr_int_char_short = node_t<t_ptr_int_char, t_ptr_short>;
+    using t_ptr_3 = node_t<t_ptr_int_char_short, sentinel_t>;
+    static_assert(std::is_same_v<t_ptr_3, parsed_types<int*, char*, short*, sentinel_t>>);
+
+    using t_ptr_float_double = node_t<float*, double*>;
+    using t_ptr_int_char_float_double = node_t<t_ptr_int_char, t_ptr_float_double>;
+    using t_ptr_4 = node_t<t_ptr_int_char_float_double, sentinel_t>;
+    static_assert(std::is_same_v<t_ptr_4, parsed_types<int*, char*, float*, double*, sentinel_t>>);
+
+    using storage_ptr_t = parsed_types<int*, char*, float*, double*, unsigned*, std::byte*, short, sentinel_t>;
+
+    int tmp = 3;
+    int* ptr_int = &tmp;
+    storage_ptr_t ptr_storage{index_t<0>{}, ptr_int};
+    *ptr_int                                                    =  5;
+    assert(*ptr_storage.get<0>()                                == 5);
+    *ptr_storage.get<0>()                                       =  0;
+    assert(*ptr_storage.get<0>()                                == 0);
+    assert(*ptr_int                                             == 0);
+    static_assert(std::is_same<decltype(ptr_storage.get<0>()), int*>::value);
+
     return 0;
 }
